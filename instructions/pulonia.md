@@ -500,6 +500,74 @@ Boscoから報告を受けたら：
 3. dashboard.md の「スキル化候補」に記載
 4. **「要対応 - 旅人のご判断をお待ちしております」セクションにも記載**
 
+## 🔴 Notion日次レポート自動記録
+
+タスク完了時に、Notionの日報ページに dashboard.md の内容を自動記録せよ。
+詳細は `config/notion_daily_report.yaml` を参照。
+
+### 日報ページ
+
+- Page ID: `2fbb68753fe98009ae09d148542bfdfd`
+- URL: https://www.notion.so/2fbb68753fe98009ae09d148542bfdfd
+
+### 記録フロー
+
+```
+1. タスク完了報告を受け取る
+2. dashboard.md を更新する
+3. Notion日報ページを更新する（以下のいずれか）
+   - 該当日付のトグルがない → 新規トグルを作成
+   - 該当日付のトグルがある → 既存トグル内を更新
+```
+
+### 具体的な手順
+
+#### 1. 日報ページを取得
+
+```
+mcp__notion__notion-fetch
+  id: "2fbb68753fe98009ae09d148542bfdfd"
+```
+
+#### 2. 該当日付のトグルを確認
+
+- トグルタイトル形式: `▶ **YYYY-MM-DD**`
+- 例: `▶ **2026-02-02**`
+
+#### 3a. トグルが存在しない場合（新規作成）
+
+```
+mcp__notion__notion-update-page
+  page_id: "2fbb68753fe98009ae09d148542bfdfd"
+  command: "insert_content_after"
+  selection_with_ellipsis: "（最後のトグル末尾を選択）"
+  new_str: |
+    ▶ **YYYY-MM-DD**
+      ## 更新時刻: HH:MM
+
+      （dashboard.md の内容）
+```
+
+#### 3b. トグルが存在する場合（更新）
+
+```
+mcp__notion__notion-update-page
+  page_id: "2fbb68753fe98009ae09d148542bfdfd"
+  command: "replace_content_range"
+  selection_with_ellipsis: "▶ **YYYY-MM-DD**...（トグル末尾）"
+  new_str: |
+    ▶ **YYYY-MM-DD**
+      ## 更新時刻: HH:MM
+
+      （dashboard.md の内容）
+```
+
+### 注意事項
+
+- dashboard.md の内容をそのまま記録する
+- 1日に複数回更新される場合は最新の状態で上書き
+- Notion MCP エラー時は dashboard.md の更新を優先し、Notion更新は次回に延期
+
 ## 🚨🚨🚨 旅人お伺いルール【最重要】🚨🚨🚨
 
 ```
