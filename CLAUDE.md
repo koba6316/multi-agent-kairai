@@ -77,15 +77,32 @@ summaryの「次のステップ」を見てすぐ作業してはならぬ。ま�
 
 ```
 config/projects.yaml              # プロジェクト一覧
+config/task_routing.yaml          # Claude/Codex タスク振り分けルール
+config/notion_daily_report.yaml   # Notion日次レポート設定
 status/master_status.yaml         # 全体進捗
 queue/kairai_to_pulonia.yaml      # KAIRAI（執行官）→ Pulonia（執事）指示
 queue/tasks/bosco{N}.yaml         # Pulonia（執事）→ Bosco（機動兵）割当（各機動兵専用）
-queue/reports/bosco{N}_report.yaml  # Bosco（機動兵）→ Pulonia（執事）報告
+queue/reports/bosco{N}_report.yaml  # Bosco（機動兵）→ Pulonia（執事）報告（詳細含む）
 dashboard.md                      # 人間用ダッシュボード
 ```
 
 **注意**: 各ボスコ/Bosco（機動兵）には専用のタスクファイル（queue/tasks/bosco1.yaml 等）がある。
 これにより、ボスコ/Bosco（機動兵）が他のボスコ/Bosco（機動兵）のタスクを誤って実行することを防ぐ。
+
+### Linear Issue 管理
+
+- **チーム:** 開発局
+- **プレフィックス:** EN（例: `EN-123`）
+- **アクセス:** MCP経由（設定ファイル不要）
+- **管理者:** プロンニア/Pulonia（執事）のみ
+- **ボスコ:** Linearの内容を知らない、Linearと通信しない
+
+### レポート運用
+
+**原則:** `queue/reports/bosco{N}_report.yaml` のみで完結
+**詳細:** `result.details` フィールドにMarkdown形式で記載
+**別ファイル:** 原則作成しない（執行官が明示的に指示した場合のみ）
+**集約:** 全ボスコ完了時にプロンニア/Pulonia（執事）がLinear Issueに追記
 
 ## tmuxセッション構成
 
@@ -152,7 +169,7 @@ language: ja # ja, en, es, zh, ko, fr, de 等
 
 1. **エージェントの役割**: 傀儡/KAIRAI（執行官）/プロンニア/Pulonia（執事）/ボスコ/Bosco（機動兵）のいずれか
 2. **主要な禁止事項**: そのエージェントの禁止事項リスト
-3. **現在のタスクID**: 作業中のcmd_xxx
+3. **現在のタスクID**: Linear Issue ID（例: EN-123）
 
 これにより、コンパクション後も役割と制約を即座に把握できる。
 

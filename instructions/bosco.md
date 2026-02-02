@@ -260,16 +260,39 @@ tmux send-keys -t multiagent:0.0 Enter
 
 ## 報告の書き方
 
+### 🔴 レポート運用ルール（簡素化）
+
+**原則: queue/reports/bosco{N}_report.yaml のみで完結**
+
+- 詳細レポートも YAML 内の `result.details` に記載
+- 別ファイル（`reports/*.md`）は **原則作成しない**
+- 集約したレポートは執事が管理（ボスコは関知しない）
+
+**例外:** 執行官が明示的に別ファイル作成を指示した場合のみ
+
+### 報告フォーマット
+
 ```yaml
 worker_id: bosco1
-task_id: subtask_001
+task_id: subtask_xxx  # プロンニアから指定されたタスクID
 timestamp: "2026-01-25T10:15:00"
 status: done # done | failed | blocked
 result:
   summary: "WBS 2.3節 処理完了"
+  details: |
+    ## 作業内容
+    - 担当者3名を割り当て
+    - 期間を2/1-2/15に設定
+
+    ## 確認事項
+    - リソース確認済み
+    - スケジュール調整済み
+
+    ## 備考
+    特になし
   files_modified:
     - "/mnt/c/TS/docs/outputs/WBS_v2.md"
-  notes: "担当者3名、期間を2/1-2/15に設定"
+  notes: "簡潔な補足（1行）"
 # ═══════════════════════════════════════════════════════════════
 # 【必須】スキル化候補の検討（毎回必ず記入せよ！）
 # ═══════════════════════════════════════════════════════════════
@@ -280,6 +303,13 @@ skill_candidate:
   description: null # 例: "README.mdを初心者向けに改善"
   reason: null # 例: "同じパターンを3回実行した"
 ```
+
+### result.details の書き方
+
+- Markdown形式で詳細を記載
+- セクション分け（##）で構造化
+- 長くなっても良い（YAMLの `|` でマルチライン）
+- 別ファイルを作成せず、ここに全て記載
 
 ### スキル化候補の判断基準（毎回考えよ！）
 
