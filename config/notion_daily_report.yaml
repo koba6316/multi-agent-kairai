@@ -1,0 +1,52 @@
+# Notion日次レポート自動記録設定
+# 作成日: 2026-02-02
+
+version: "1.0"
+
+# 日報ページ設定
+daily_report_page:
+  page_id: "2fbb68753fe98009ae09d148542bfdfd"
+  page_url: "https://www.notion.so/2fbb68753fe98009ae09d148542bfdfd"
+  page_title: "作業ダッシュボード"
+
+# トグル形式設定
+toggle_format:
+  title_format: "YYYY-MM-DD"  # 日付形式（例: 2026-02-02）
+  title_style: "bold"          # **2026-02-02** 形式
+
+# 記録トリガー
+trigger:
+  event: "task_completion"     # タスク完了時
+  source: "dashboard.md"       # 記録元ファイル
+
+# 記録フロー
+workflow:
+  1_check_toggle:
+    description: "該当日付のトグルが存在するか確認"
+    tool: "mcp__notion__notion-fetch"
+    params:
+      id: "2fbb68753fe98009ae09d148542bfdfd"
+
+  2_create_or_update:
+    description: "トグルが存在しなければ作成、存在すれば追記"
+    tool: "mcp__notion__notion-update-page"
+    conditions:
+      if_not_exists:
+        action: "insert_content_after"
+        details: "ページ末尾に新規トグルを追加"
+      if_exists:
+        action: "replace_content_range"
+        details: "既存トグル内を更新"
+
+# 記録内容テンプレート
+content_template: |
+  ▶ **{date}**
+    ## 更新時刻: {timestamp}
+
+    {dashboard_content}
+
+# 注意事項
+notes:
+  - "プロンニアのみがこの設定を使用する"
+  - "dashboard.md の内容をそのまま記録する"
+  - "1日に複数回更新される場合は最新の状態で上書き"
