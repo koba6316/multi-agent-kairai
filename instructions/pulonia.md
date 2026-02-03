@@ -556,17 +556,37 @@ Boscoから報告を受けたら：
 - Page ID: `2fbb68753fe98009ae09d148542bfdfd`
 - URL: https://www.notion.so/2fbb68753fe98009ae09d148542bfdfd
 
-### 記録フロー
+### 🚨 記録フロー（厳守）
 
 ```
+0. 【最重要】date "+%Y-%m-%d" で TODAY を取得（推測禁止！）
 1. タスク完了報告を受け取る
 2. dashboard.md を更新する
-3. Notion日報ページを更新する（以下のいずれか）
-   - 該当日付のトグルがない → 新規トグルを作成
-   - 該当日付のトグルがある → 既存トグル内を更新
+3. Notion日報ページを更新する
+   - TODAY のトグルがない → 新規トグルを作成
+   - TODAY のトグルがある → そのトグルのみを更新
+```
+
+### 🚨 日付判定ルール（再発防止）
+
+```bash
+# 必ずこのコマンドで日付を取得せよ
+date "+%Y-%m-%d"
+# 出力例: 2026-02-03
+
+# この日付を TODAY として使用
+# 「昨日の続き」「最後のトグル」という判断は禁止
 ```
 
 ### 具体的な手順
+
+#### 0. 【必須】現在日付を取得
+
+```bash
+date "+%Y-%m-%d"
+```
+
+この出力を `TODAY` として以降の処理で使用する。
 
 #### 1. 日報ページを取得
 
@@ -575,44 +595,54 @@ mcp__notion__notion-fetch
   id: "2fbb68753fe98009ae09d148542bfdfd"
 ```
 
-#### 2. 該当日付のトグルを確認
+#### 2. TODAY のトグルを確認
 
 - トグルタイトル形式: `▶ **YYYY-MM-DD**`
-- 例: `▶ **2026-02-02**`
+- 確認対象: `▶ **{TODAY}**` （例: `▶ **2026-02-03**`）
+- 「最後のトグル」ではなく「TODAY のトグル」を探すこと
 
-#### 3a. トグルが存在しない場合（新規作成）
+#### 3a. TODAY のトグルが存在しない場合（新規作成）
 
 ```
 mcp__notion__notion-update-page
   page_id: "2fbb68753fe98009ae09d148542bfdfd"
   command: "insert_content_after"
-  selection_with_ellipsis: "（最後のトグル末尾を選択）"
+  selection_with_ellipsis: "（ページ末尾のコンテンツを選択）"
   new_str: |
-    ▶ **YYYY-MM-DD**
+    ▶ **{TODAY}**
       ## 更新時刻: HH:MM
 
       （dashboard.md の内容）
 ```
 
-#### 3b. トグルが存在する場合（更新）
+#### 3b. TODAY のトグルが存在する場合（更新）
 
 ```
 mcp__notion__notion-update-page
   page_id: "2fbb68753fe98009ae09d148542bfdfd"
   command: "replace_content_range"
-  selection_with_ellipsis: "▶ **YYYY-MM-DD**...（トグル末尾）"
+  selection_with_ellipsis: "▶ **{TODAY}**...（{TODAY}のトグル末尾まで）"
   new_str: |
-    ▶ **YYYY-MM-DD**
+    ▶ **{TODAY}**
       ## 更新時刻: HH:MM
 
       （dashboard.md の内容）
 ```
+
+### 🚨 禁止事項
+
+| 禁止行為 | 理由 | 正しい方法 |
+|----------|------|-----------|
+| 日付を推測する | 日付間違いの原因 | date コマンドで取得 |
+| 「最後のトグル」を更新 | 別の日付を上書きする | TODAY のトグルを選択 |
+| 複数日のトグルを選択 | 内容が混在する | 1日分のみ選択 |
 
 ### 注意事項
 
 - dashboard.md の内容をそのまま記録する
 - 1日に複数回更新される場合は最新の状態で上書き
 - Notion MCP エラー時は dashboard.md の更新を優先し、Notion更新は次回に延期
+- **日付判定は必ず date コマンドで行う。記憶や推測からの判断は禁止**
 
 ## 🚨🚨🚨 旅人お伺いルール【最重要】🚨🚨🚨
 

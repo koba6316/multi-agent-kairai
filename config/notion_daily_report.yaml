@@ -1,7 +1,8 @@
 # Notion日次レポート自動記録設定
 # 作成日: 2026-02-02
+# 更新日: 2026-02-03（日付判定ルール追加）
 
-version: "1.0"
+version: "1.1"
 
 # 日報ページ設定
 daily_report_page:
@@ -13,40 +14,119 @@ daily_report_page:
 toggle_format:
   title_format: "YYYY-MM-DD"  # 日付形式（例: 2026-02-02）
   title_style: "bold"          # **2026-02-02** 形式
+  toggle_marker: "▶"           # トグルの開始記号
+
+# ========================================
+# 🔴 日付判定ルール（再発防止のため必須）
+# ========================================
+date_determination:
+  # 日付の取得方法
+  method: "system_command"
+  command: 'date "+%Y-%m-%d"'
+
+  # タイムゾーン
+  timezone: "JST"
+  note: "必ずローカルシステムの date コマンドで取得すること。推測禁止。"
+
+  # 日付境界
+  day_boundary: "00:00"
+  boundary_note: "0時を過ぎたら新しい日付のトグルを使用"
 
 # 記録トリガー
 trigger:
   event: "task_completion"     # タスク完了時
   source: "dashboard.md"       # 記録元ファイル
 
-# 記録フロー
+# ========================================
+# 🔴 記録フロー（厳密な手順）
+# ========================================
 workflow:
-  1_check_toggle:
-    description: "該当日付のトグルが存在するか確認"
+  0_get_current_date:
+    description: "現在の日付を取得（推測禁止）"
+    command: 'date "+%Y-%m-%d"'
+    output_variable: "TODAY"
+    critical: true
+    note: "この日付を以降のすべての処理で使用する"
+
+  1_fetch_page:
+    description: "日報ページの現在の内容を取得"
     tool: "mcp__notion__notion-fetch"
     params:
       id: "2fbb68753fe98009ae09d148542bfdfd"
 
-  2_create_or_update:
+  2_check_toggle:
+    description: "TODAY の日付のトグルが存在するか確認"
+    check_pattern: '▶ **{TODAY}**'
+    note: "他の日付のトグルと混同しないこと"
+
+  3_create_or_update:
     description: "トグルが存在しなければ作成、存在すれば追記"
     tool: "mcp__notion__notion-update-page"
     conditions:
       if_not_exists:
         action: "insert_content_after"
         details: "ページ末尾に新規トグルを追加"
+        target: "ページの最後のコンテンツの後"
       if_exists:
         action: "replace_content_range"
-        details: "既存トグル内を更新"
+        details: "TODAY の日付のトグル全体を置換"
+        selection_rule: "▶ **{TODAY}** から次のトグル（▶ **）の直前まで、または末尾まで"
+
+# ========================================
+# 🔴 トグル選択ルール（最重要）
+# ========================================
+toggle_selection:
+  # 更新対象の特定方法
+  identification:
+    - "日付は TODAY 変数から取得（推測禁止）"
+    - "トグルは '▶ **YYYY-MM-DD**' 形式で完全一致させる"
+    - "「最後のトグル」ではなく「TODAY のトグル」を選択"
+
+  # 範囲の特定方法
+  range_detection:
+    start: "▶ **{TODAY}**"
+    end_options:
+      - "次の ▶ ** の直前"
+      - "ページ末尾（次のトグルがない場合）"
+    note: "他の日付のトグルの内容を巻き込まないこと"
+
+  # 禁止事項
+  forbidden:
+    - "「最新のトグル」「最後のトグル」という曖昧な表現での選択"
+    - "日付を確認せずにトグルを更新"
+    - "複数日のトグルにまたがる選択"
 
 # 記録内容テンプレート
 content_template: |
   ▶ **{date}**
-    ## 更新時刻: {timestamp}
+  	## 更新時刻: {timestamp}
 
-    {dashboard_content}
+  	{dashboard_content}
 
+# ========================================
 # 注意事項
+# ========================================
 notes:
   - "プロンニアのみがこの設定を使用する"
   - "dashboard.md の内容をそのまま記録する"
   - "1日に複数回更新される場合は最新の状態で上書き"
+  - "【重要】日付は必ず date コマンドで取得。推測・記憶からの判断禁止"
+  - "【重要】更新前に TODAY のトグルが正しく選択されているか確認"
+  - "【重要】他の日付のトグルを巻き込まないよう範囲を厳密に指定"
+
+# トラブルシューティング
+troubleshooting:
+  wrong_date_content:
+    symptom: "別の日付のトグルに内容が入ってしまった"
+    cause: "日付を推測した、または「最後のトグル」を選択した"
+    fix: "date コマンドで TODAY を取得し、その日付のトグルのみを選択"
+
+  mixed_content:
+    symptom: "複数日の内容が1つのトグルに混在"
+    cause: "replace_content_range の範囲が広すぎた"
+    fix: "選択範囲を TODAY のトグルのみに限定"
+
+  empty_toggle:
+    symptom: "トグルが空になった"
+    cause: "replace_content_range で内容を消してしまった"
+    fix: "選択範囲と new_str の両方が正しいか確認"
