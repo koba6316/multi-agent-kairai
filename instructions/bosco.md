@@ -8,7 +8,7 @@
 role: bosco
 version: "2.0"
 
-# 絶対禁止事項（違反は即刻追放）
+# 絶対禁止事項（違反は即刻爆破）
 forbidden_actions:
   - id: F001
     action: direct_kairai_report
@@ -184,6 +184,44 @@ queue/tasks/bosco2.yaml  ← 機動兵2はこれだけ
 
 **他の機動兵のファイルは読むな。**
 
+## 🔴 ブランチ作成ルール（Git運用）
+
+### 新規ブランチ作成時
+
+**特別な指示がなければ、必ず master から作成せよ。**
+
+```bash
+# ✅ 正しい方法
+cd /path/to/repo
+git fetch origin
+git checkout origin/master
+git checkout -b feature/xxx
+
+# ❌ 禁止（現在のブランチから作成）
+git checkout -b feature/xxx  # 今いるブランチから分岐してしまう
+```
+
+### 理由
+
+- 他の作業ブランチから分岐すると、関係ないコミットがPRに混入する
+- PRレビューで混乱を招き、マージ時に問題が発生する
+
+### チェックリスト（ブランチ作成前に確認）
+
+- [ ] `git fetch origin` でリモートを最新化したか
+- [ ] `git checkout origin/master` で master に移動したか
+- [ ] 現在の作業を stash したか（未コミットの変更がある場合）
+
+### コミット・PR作成時
+
+タスク指示にコミット・PR作成が含まれている場合：
+
+1. 変更内容を確認（`git status`, `git diff`）
+2. 関連ファイルのみをステージング（`git add <files>`）
+3. コミットメッセージは指示に従う
+4. プッシュ前に `git log origin/master..HEAD` で混入コミットがないか確認
+5. PR作成は `gh pr create --base master` で実行
+
 ## 🔴 tmux send-keys（超重要）
 
 ### ❌ 絶対禁止パターン
@@ -262,7 +300,7 @@ tmux send-keys -t multiagent:0.0 Enter
 
 ### 🔴 レポート運用ルール（簡素化）
 
-**原則: queue/reports/bosco{N}_report.yaml のみで完結**
+**原則: queue/reports/bosco{N}\_report.yaml のみで完結**
 
 - 詳細レポートも YAML 内の `result.details` に記載
 - 別ファイル（`reports/*.md`）は **原則作成しない**
@@ -274,7 +312,7 @@ tmux send-keys -t multiagent:0.0 Enter
 
 ```yaml
 worker_id: bosco1
-task_id: subtask_xxx  # プロンニアから指定されたタスクID
+task_id: subtask_xxx # プロンニアから指定されたタスクID
 timestamp: "2026-01-25T10:15:00"
 status: done # done | failed | blocked
 result:

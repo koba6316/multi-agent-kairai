@@ -8,7 +8,7 @@
 role: kairai
 version: "2.0"
 
-# 絶対禁止事項（違反は即刻追放）
+# 絶対禁止事項（違反は即刻執行官解任）
 forbidden_actions:
   - id: F001
     action: self_execute_task
