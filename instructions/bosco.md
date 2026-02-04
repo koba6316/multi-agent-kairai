@@ -28,6 +28,10 @@ forbidden_actions:
   - id: F005
     action: skip_context_reading
     description: "コンテキストを読まずに作業開始"
+  - id: F006
+    action: skip_send_keys_notification
+    description: "タスク完了後に send-keys 通知を省略"
+    reason: "執事が報告を受け取れず、タスク完了が認識されない"
 
 # ワークフロー
 workflow:
@@ -136,6 +140,7 @@ skill_candidate:
 | F003 | 勝手な作業       | 統制乱れ       | 指示のみ実行 |
 | F004 | ポーリング       | API代金浪費    | イベント駆動 |
 | F005 | コンテキスト未読 | 品質低下       | 必ず先読み   |
+| F006 | send-keys 省略   | 報告未着       | 必ず通知実行 |
 
 ## 言葉遣い
 
@@ -222,6 +227,44 @@ git checkout -b feature/xxx  # 今いるブランチから分岐してしまう
 4. プッシュ前に `git log origin/master..HEAD` で混入コミットがないか確認
 5. PR作成は `gh pr create --base master` で実行
 
+### 🔴 並行作業時の分業体制
+
+複数の Issue を並行で作業する場合、以下の分業体制を適用する。
+
+#### 実装フェーズ（並列実行可）
+各ボスコが担当 Issue ごとに実施：
+- コード実装
+- セルフレビュー（self-review-check-list.md）
+- テスト実行・型チェック
+- **完了報告（コミット前の状態で）**
+
+**重要**: 実装ボスコは git commit / git push を行わない。
+
+#### Git 操作フェーズ（直列実行）
+プロンニアが空いているボスコ（Claude 優先）に振る：
+- master からブランチ作成・切り替え
+- git add / git commit
+- lint エラー修正（必要に応じて）
+- git push
+- PR 作成（gh pr create）
+
+#### 理由
+- 複数ボスコが同じリポジトリで並行作業すると、ブランチ切り替え時に未コミット変更が残り、他 Issue のファイルが混入するリスクがある
+- Git 操作を直列化することで競合を防止
+
+#### 報告フォーマット（実装完了時）
+```yaml
+status: implementation_done
+result:
+  summary: "実装完了（コミット前）"
+  files_modified:
+    - "path/to/file1.ts"
+    - "path/to/file2.ts"
+  tests_passed: true
+  self_review: done
+notes: "Git 操作待ち"
+```
+
 ## 🔴 tmux send-keys（超重要）
 
 ### ❌ 絶対禁止パターン
@@ -250,7 +293,22 @@ tmux send-keys -t multiagent:0.0 Enter
 - 報告なしでは任務完了扱いにならない
 - **必ず2回に分けて実行**
 
-## 🔴 報告通知プロトコル（通信ロスト対策）
+## 🔴 報告通知プロトコル（通信ロスト対策）【最重要】
+
+```
+████████████████████████████████████████████████████████████████
+█  報告ファイルを書いただけでは任務完了にならない！          █
+█  send-keys で執事に通知するまでが任務である。              █
+████████████████████████████████████████████████████████████████
+```
+
+**違反事例（2026-02-04 ボスコ4号）:**
+- 報告ファイル（bosco4_report.yaml）は書いた
+- しかし send-keys を実行しなかった
+- 結果、執事が報告を受け取れず、タスク完了が認識されなかった
+
+**対策:** タスク完了時は以下の順序を**必ず**実行せよ：
+1. 報告ファイル書き込み → 2. タスクファイル status: done 更新 → 3. **send-keys 実行**
 
 報告ファイルを書いた後、執事への通知が届かないケースがある。
 以下のプロトコルで確実に届けよ。
